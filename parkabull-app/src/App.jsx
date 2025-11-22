@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation, Car, Users, RefreshCw, ShieldCheck } from 'lucide-react';
 import { clsx } from 'clsx';
+import logo from '/parkabull-logo.png';
 
 // --- MOCK DATA ---
 // In a real app, this comes from your Node/Python API
@@ -110,13 +111,11 @@ export default function App() {
       
       {/* --- HEADER --- */}
       <header className="bg-usfGreen text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="bg-usfGold p-2 rounded-full text-usfGreen font-bold">
-            <TargetIcon />
-          </div>
+        <div className="flex items-center gap-3">
+          <img src={logo} alt="Parkabull Logo" className="h-14 w-14 bg-white rounded-full p-1" />
           <div>
-            <h1 className="font-bold text-lg leading-tight">Parkabull</h1>
-            <p className="text-xs text-usfGold opacity-90">Parking Predictor</p>
+            <h1 className="font-bold text-xl leading-tight">Parkabull</h1>
+            <p className="text-sm text-usfGold opacity-90">Parking Predictor</p>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
