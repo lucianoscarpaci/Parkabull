@@ -111,7 +111,7 @@ export default function App() {
             <TargetIcon />
           </div>
           <div>
-            <h1 className="font-bold text-lg leading-tight">Bull's-Eye</h1>
+            <h1 className="font-bold text-lg leading-tight">Parkabull</h1>
             <p className="text-xs text-usfGold opacity-90">Parking Predictor</p>
           </div>
         </div>
