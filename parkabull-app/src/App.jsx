@@ -9,12 +9,16 @@ const INITIAL_LOTS = [
   { id: 2, name: 'Lot B (MSC)', capacity: 150, current: 45, lat: 40, lng: 60, type: 'Staff/Student' },
   { id: 3, name: 'Lot C (Gym)', capacity: 300, current: 100, lat: 80, lng: 40, type: 'Student' },
   { id: 4, name: 'Garage 1', capacity: 500, current: 490, lat: 20, lng: 80, type: 'Garage' },
+  { id: 5, name: 'USF C.W Bill Young ROTC Building', capacity: 100, current: 60, lat: 60, lng: 80, type: 'Staff/Student' },
+  { id: 6, name: 'CAS Multidisciplinary Complex', capacity: 120, current: 70, lat: 70, lng: 10, type: 'Student' },
 ];
 
 const DESTINATIONS = [
   { name: 'USF Library', lat: 55, lng: 25 },
   { name: 'Marshall Student Center', lat: 35, lng: 65 },
   { name: 'Rec Center (Gym)', lat: 85, lng: 45 },
+  { name: 'USF C.W Bill Young ROTC Building', lat: 65, lng: 85 },
+  { name: 'CAS Multidisciplinary Complex', lat: 75, lng: 15 },
 ];
 
 export default function App() {
