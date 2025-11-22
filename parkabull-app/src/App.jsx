@@ -1,0 +1,292 @@
+import React, { useState, useEffect } from 'react';
+import { MapPin, Navigation, Car, Users, RefreshCw, ShieldCheck } from 'lucide-react';
+import { clsx } from 'clsx';
+
+// --- MOCK DATA ---
+// In a real app, this comes from your Node/Python API
+const INITIAL_LOTS = [
+  { id: 1, name: 'Lot A (Library)', capacity: 200, current: 185, lat: 50, lng: 20, type: 'Student' },
+  { id: 2, name: 'Lot B (MSC)', capacity: 150, current: 45, lat: 40, lng: 60, type: 'Staff/Student' },
+  { id: 3, name: 'Lot C (Gym)', capacity: 300, current: 100, lat: 80, lng: 40, type: 'Student' },
+  { id: 4, name: 'Garage 1', capacity: 500, current: 490, lat: 20, lng: 80, type: 'Garage' },
+];
+
+const DESTINATIONS = [
+  { name: 'USF Library', lat: 55, lng: 25 },
+  { name: 'Marshall Student Center', lat: 35, lng: 65 },
+  { name: 'Rec Center (Gym)', lat: 85, lng: 45 },
+];
+
+export default function App() {
+  const [lots, setLots] = useState(INITIAL_LOTS);
+  const [selectedLot, setSelectedLot] = useState(null);
+  const [destination, setDestination] = useState('');
+  const [recommendation, setRecommendation] = useState(null);
+  const [userPoints, setUserPoints] = useState(120); // Gamification
+
+  // --- ALGORITHM: CALCULATE SCORE ---
+  // Returns 0 (Bad) to 100 (Good)
+  const getScore = (lot) => {
+    const utilization = lot.current / lot.capacity;
+    // Simple logic: The fuller it is, the lower the score.
+    // In real app, mix this with historical time data.
+    let score = Math.round((1 - utilization) * 100);
+    return Math.max(0, score);
+  };
+
+  const getStatusColor = (score) => {
+    if (score > 60) return 'bg-green-500';
+    if (score > 30) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  // --- ACTION: CROWDSOURCING ---
+  const handleCheckIn = (lotId) => {
+    setLots(lots.map(lot => {
+      if (lot.id === lotId && lot.current < lot.capacity) {
+        return { ...lot, current: lot.current + 1 };
+      }
+      return lot;
+    }));
+    setUserPoints(prev => prev + 10);
+    alert("Thanks for checking in! +10 Bull Points 🤘");
+  };
+
+  const handleCheckOut = (lotId) => {
+    setLots(lots.map(lot => {
+      if (lot.id === lotId && lot.current > 0) {
+        return { ...lot, current: lot.current - 1 };
+      }
+      return lot;
+    }));
+    setUserPoints(prev => prev + 5);
+  };
+
+  // --- ACTION: SMART NAVIGATION ---
+  const findBestParking = (destName) => {
+    const dest = DESTINATIONS.find(d => d.name === destName);
+    setDestination(destName);
+    
+    if (!dest) return;
+
+    // Algorithm: Score = (Availability Score * 0.7) + (Proximity Score * 0.3)
+    // This creates a "Smart" recommendation
+    let bestLot = null;
+    let highestSmartScore = -1;
+
+    lots.forEach(lot => {
+      const availabilityScore = getScore(lot); // 0-100
+      
+      // Mock distance calculation (Euclidean)
+      const dist = Math.sqrt(Math.pow(lot.lat - dest.lat, 2) + Math.pow(lot.lng - dest.lng, 2));
+      const proximityScore = Math.max(0, 100 - dist); // Closer = Higher score
+
+      const smartScore = (availabilityScore * 0.7) + (proximityScore * 0.3);
+
+      if (smartScore > highestSmartScore) {
+        highestSmartScore = smartScore;
+        bestLot = lot;
+      }
+    });
+
+    setRecommendation(bestLot);
+    setSelectedLot(bestLot);
+  };
+
+  // --- HACKATHON DEMO MODE: RANDOMIZER ---
+  const randomizeTraffic = () => {
+    setLots(lots.map(lot => ({
+      ...lot,
+      current: Math.floor(Math.random() * lot.capacity)
+    })));
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 font-sans pb-20 md:pb-0">
+      
+      {/* --- HEADER --- */}
+      <header className="bg-usfGreen text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-2">
+          <div className="bg-usfGold p-2 rounded-full text-usfGreen font-bold">
+            <TargetIcon />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg leading-tight">Bull's-Eye</h1>
+            <p className="text-xs text-usfGold opacity-90">Parking Predictor</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
+          <span className="text-sm font-bold">{userPoints} pts</span>
+        </div>
+      </header>
+
+      <main className="max-w-md mx-auto md:max-w-4xl md:flex md:gap-6 md:p-6">
+        
+        {/* --- LEFT COL: MAP & INPUT --- */}
+        <div className="flex-1">
+          
+          {/* Navigation Input */}
+          <div className="bg-white p-4 shadow-sm md:rounded-xl md:mb-6 sticky top-16 z-40">
+            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Where are you going?</label>
+            <div className="relative">
+              <select 
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg appearance-none text-gray-700 focus:ring-2 focus:ring-usfGreen outline-none"
+                onChange={(e) => findBestParking(e.target.value)}
+                value={destination}
+              >
+                <option value="">Select Campus Destination...</option>
+                {DESTINATIONS.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
+              </select>
+              <Navigation className="absolute right-3 top-3 text-gray-400 w-5 h-5" />
+            </div>
+            
+            {recommendation && (
+              <div className="mt-3 bg-green-50 border border-green-200 p-3 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                <ShieldCheck className="text-green-600 w-6 h-6 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-green-800 font-bold">Best Spot Found!</p>
+                  <p className="text-xs text-green-700">Based on proximity to {destination} and current availability, we recommend <span className="font-bold underline">{recommendation.name}</span>.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* The Map (Simulated Visualization) */}
+          <div className="relative w-full h-64 md:h-96 bg-gray-200 md:rounded-xl overflow-hidden shadow-inner border border-gray-300 group">
+            {/* Static Campus Background Placeholder */}
+            <div className="absolute inset-0 opacity-20 bg-[url('https://www.usf.edu/images/maps/campus-map-preview.jpg')] bg-cover bg-center" />
+            
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
+              <span className="text-sm font-mono opacity-50">Interactive Campus Map Area</span>
+            </div>
+
+            {/* Simulated Lots (Absolute Positioned) */}
+            {lots.map(lot => {
+              const score = getScore(lot);
+              const colorClass = getStatusColor(score);
+              const isSelected = selectedLot?.id === lot.id;
+
+              return (
+                <button
+                  key={lot.id}
+                  onClick={() => setSelectedLot(lot)}
+                  style={{ top: `${lot.lat}%`, left: `${lot.lng}%` }}
+                  className={clsx(
+                    "absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 shadow-lg flex items-center justify-center",
+                    isSelected ? "scale-125 z-10 ring-4 ring-white" : "scale-100 hover:scale-110",
+                    colorClass,
+                    "w-10 h-10 rounded-full text-white font-bold text-xs border-2 border-white/50"
+                  )}
+                >
+                  {score}
+                </button>
+              );
+            })}
+            
+            {/* Simulation Button (For Demo Only) */}
+            <button 
+              onClick={randomizeTraffic}
+              className="absolute bottom-2 right-2 bg-black/70 text-white p-2 rounded-full hover:bg-black text-xs flex items-center gap-1 backdrop-blur-sm"
+            >
+              <RefreshCw size={12} /> Sim Traffic
+            </button>
+          </div>
+        </div>
+
+        {/* --- RIGHT COL: DETAILS --- */}
+        <div className="flex-1 p-4 md:p-0">
+          <h2 className="text-lg font-bold text-gray-800 mb-4 hidden md:block">Lot Status</h2>
+          
+          {selectedLot ? (
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 animate-in slide-in-from-bottom-4 fade-in duration-300">
+              {/* Card Header */}
+              <div className={clsx("p-4 text-white", getStatusColor(getScore(selectedLot)))}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold">{selectedLot.name}</h2>
+                    <p className="text-white/80 text-sm">{selectedLot.type} Parking</p>
+                  </div>
+                  <div className="text-center bg-white/20 rounded-lg p-2 backdrop-blur-sm">
+                    <span className="block text-2xl font-black">{getScore(selectedLot)}</span>
+                    <span className="text-xs font-bold uppercase">Score</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Stats */}
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <p className="text-gray-400 text-xs uppercase font-bold">Occupancy</p>
+                    <p className="text-3xl font-bold text-gray-800">
+                      {Math.round((selectedLot.current / selectedLot.capacity) * 100)}%
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-gray-400 text-xs uppercase font-bold">Spots Left</p>
+                    <p className="text-3xl font-bold text-gray-800">
+                      {selectedLot.capacity - selectedLot.current}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-3 mb-8 overflow-hidden">
+                  <div 
+                    className={clsx("h-3 rounded-full transition-all duration-500", getStatusColor(getScore(selectedLot)))} 
+                    style={{ width: `${(selectedLot.current / selectedLot.capacity) * 100}%` }}
+                  />
+                </div>
+
+                {/* Crowdsource Buttons */}
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => handleCheckIn(selectedLot.id)}
+                    className="flex flex-col items-center justify-center p-4 border-2 border-usfGreen/10 bg-green-50 text-usfGreen rounded-xl hover:bg-usfGreen hover:text-white transition-colors"
+                  >
+                    <MapPin className="mb-2" />
+                    <span className="font-bold text-sm">I'm Here</span>
+                    <span className="text-[10px] opacity-70">+10 pts</span>
+                  </button>
+                  <button 
+                    onClick={() => handleCheckOut(selectedLot.id)}
+                    className="flex flex-col items-center justify-center p-4 border-2 border-gray-100 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-800 hover:text-white transition-colors"
+                  >
+                    <Car className="mb-2" />
+                    <span className="font-bold text-sm">Leaving</span>
+                    <span className="text-[10px] opacity-70">+5 pts</span>
+                  </button>
+                </div>
+                
+                <div className="mt-4 text-center">
+                   <button className="text-xs text-gray-400 hover:text-red-500 flex items-center justify-center w-full gap-1">
+                      <Users size={12} /> Report inaccurate count
+                   </button>
+                </div>
+
+              </div>
+            </div>
+          ) : (
+            // Empty State
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-dashed border-gray-300 h-64 flex flex-col items-center justify-center">
+              <Car className="text-gray-300 w-16 h-16 mb-4" />
+              <p className="text-gray-500 font-medium">Select a lot on the map or choose a destination to get started.</p>
+            </div>
+          )}
+        </div>
+
+      </main>
+    </div>
+  );
+}
+
+// Simple SVG Icon Component
+function TargetIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <circle cx="12" cy="12" r="6"/>
+      <circle cx="12" cy="12" r="2"/>
+    </svg>
+  )
+}
